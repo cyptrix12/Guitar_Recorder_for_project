@@ -13,7 +13,7 @@ Rejestrator dźwięku to aplikacja GUI w Pythonie, która umożliwia nagrywanie 
 1. Sklonuj repozytorium:
    ```bash
    git clone https://github.com/cyptrix12/Guitar_Recorder_for_project.git
-   cd rejestrator-dzwieku
+   cd Guitar_Recorder_for_project
    ```
 2. Utwórz i aktywuj wirtualne środowisko:
    ```bash
@@ -37,4 +37,4 @@ Rejestrator dźwięku to aplikacja GUI w Pythonie, która umożliwia nagrywanie 
 4. Sprawdź liczbę już istniejących plików dla danej kombinacji.
 5. Kliknij **"Rozpocznij nagrywanie"** lub naciśnij **Enter**, aby rozpocząć nagrywanie.
 6. Kliknij **"Zakończ nagranie"** lub ponownie naciśnij **Enter**, aby zakończyć nagrywanie.
-7. Plik zostanie zapisany automatycznie.
+7. Plik zostanie zapisany (wraz z numeracją) automatycznie.
