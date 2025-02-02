@@ -22,9 +22,12 @@ def get_input_devices():
     return input_devices
 
 def count_existing_files():
+    selected_model = model_var.get()
     selected_note = note_var.get()
     selected_position = position_var.get()
-    base_name = f"{selected_note}_{selected_position}"
+    selected_knobs = knobs_var.get()
+    selected_player = player_var.get()
+    base_name = f"{selected_model}_{selected_note}_{selected_position}_{selected_knobs}_{selected_player}"
     existing_files = [f for f in os.listdir(RECORDINGS_DIR) if os.path.isfile(os.path.join(RECORDINGS_DIR, f)) and f.startswith(base_name) and f.endswith(".wav")]
     return len(existing_files)
 
@@ -52,7 +55,7 @@ def start_recording():
             recording.append(indata.copy())
     
     try:
-        stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=CHANNELS, dtype='float32', callback=callback, device=device_index, blocksize=BUFOR)
+        stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=CHANNELS, dtype='int32', callback=callback, device=device_index, blocksize=BUFOR)
         stream.start()
     except Exception as e:
         messagebox.showerror("Błąd", f"Nie można rozpocząć nagrywania: {e}")
@@ -76,19 +79,22 @@ def stop_recording():
         # Konwersja do formatu numpy
         final_recording = np.concatenate(recording, axis=0)
         
-        # Pobranie wybranej opcji z listy rozwijanej
+        # Pobranie wybranych opcji z list rozwijanych
+        selected_model = model_var.get()
         selected_note = note_var.get()
         selected_position = position_var.get()
-        file_name = os.path.join(RECORDINGS_DIR, f"{selected_note}_{selected_position}_1.wav")
+        selected_knobs = knobs_var.get()
+        selected_player = player_var.get()
+        file_name = os.path.join(RECORDINGS_DIR, f"{selected_model}_{selected_note}_{selected_position}_{selected_knobs}_{selected_player}_1.wav")
         
         # Sprawdzenie czy plik już istnieje, jeśli tak - dodaj numerowanie
         counter = 2
         while os.path.exists(file_name):
-            file_name = os.path.join(RECORDINGS_DIR, f"{selected_note}_{selected_position}_{counter}.wav")
+            file_name = os.path.join(RECORDINGS_DIR, f"{selected_model}_{selected_note}_{selected_position}_{selected_knobs}_{selected_player}_{counter}.wav")
             counter += 1
 
         # Zapis do pliku WAV
-        wav.write(file_name, SAMPLE_RATE, final_recording.astype(np.float32))
+        wav.write(file_name, SAMPLE_RATE, final_recording.astype(np.int32))
         messagebox.showinfo("Nagranie", f"Plik zapisano: {file_name}")
         update_file_count()
     else:
@@ -100,16 +106,29 @@ def stop_recording():
 # Tworzenie GUI
 root = tk.Tk()
 root.title("Rejestrator Dźwięku")
-root.geometry("300x350")
+root.geometry("300x600")
 
 # Lista rozwijana z wyborem urządzenia
+device_label = tk.Label(root, text="Urządzenie wejściowe:")
+device_label.pack()
 device_var = tk.StringVar()
 device_var.set(get_input_devices()[0])  # Domyślnie pierwsze urządzenie
 
 device_menu = tk.OptionMenu(root, device_var, *get_input_devices())
 device_menu.pack(pady=10)
 
-# Lista rozwijana z wyborem nazwy pliku
+# Lista rozwijana z wyborem modelu gitary
+model_label = tk.Label(root, text="Model gitary:")
+model_label.pack()
+model_var = tk.StringVar()
+model_var.set("1")  # Domyślna wartość
+model_options = ["1", "2", "3", "4", "5"]
+model_menu = tk.OptionMenu(root, model_var, *model_options, command=lambda _: update_file_count())
+model_menu.pack(pady=10)
+
+# Lista rozwijana z wyborem nazwy akordu
+note_label = tk.Label(root, text="Nazwa akordu:")
+note_label.pack()
 note_var = tk.StringVar()
 note_var.set("A")  # Domyślna wartość
 note_options = ["a", "A", "C", "d", "D", "e", "E", "G"]
@@ -117,11 +136,31 @@ note_menu = tk.OptionMenu(root, note_var, *note_options, command=lambda _: updat
 note_menu.pack(pady=10)
 
 # Lista rozwijana z wyborem pozycji
+position_label = tk.Label(root, text="Pozycja:")
+position_label.pack()
 position_var = tk.StringVar()
 position_var.set("otwarta")  # Domyślna wartość
 position_options = ["otwarta", "barowe_e", "barowe_a"]
 position_menu = tk.OptionMenu(root, position_var, *position_options, command=lambda _: update_file_count())
 position_menu.pack(pady=10)
+
+# Lista rozwijana z wyborem ustawień pokręteł
+knobs_label = tk.Label(root, text="Ustawienia pokręteł:")
+knobs_label.pack()
+knobs_var = tk.StringVar()
+knobs_var.set("1")  # Domyślna wartość
+knobs_options = ["1", "2", "3", "4"]
+knobs_menu = tk.OptionMenu(root, knobs_var, *knobs_options, command=lambda _: update_file_count())
+knobs_menu.pack(pady=10)
+
+# Lista rozwijana z wyborem ID grającego
+player_label = tk.Label(root, text="ID grającego:")
+player_label.pack()
+player_var = tk.StringVar()
+player_var.set("1")  # Domyślna wartość
+player_options = ["1", "2", "3", "4", "5"]
+player_menu = tk.OptionMenu(root, player_var, *player_options, command=lambda _: update_file_count())
+player_menu.pack(pady=10)
 
 # Label do wyświetlania liczby istniejących plików
 file_count_label = tk.Label(root, text=f"Istniejące pliki: {count_existing_files()}")
