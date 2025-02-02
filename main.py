@@ -8,7 +8,9 @@ import os
 # Parametry nagrywania
 SAMPLE_RATE = 48000  # Hz
 CHANNELS = 1  # Mono
-BUFOR = 1024
+BUFOR=1024
+RECORDINGS_DIR = "recordings"
+os.makedirs(RECORDINGS_DIR, exist_ok=True)
 
 recording = []
 is_recording = False
@@ -23,7 +25,7 @@ def count_existing_files():
     selected_note = note_var.get()
     selected_position = position_var.get()
     base_name = f"{selected_note}_{selected_position}"
-    existing_files = [f for f in os.listdir() if f.startswith(base_name) and f.endswith(".wav")]
+    existing_files = [f for f in os.listdir(RECORDINGS_DIR) if os.path.isfile(os.path.join(RECORDINGS_DIR, f)) and f.startswith(base_name) and f.endswith(".wav")]
     return len(existing_files)
 
 def update_file_count():
@@ -77,12 +79,12 @@ def stop_recording():
         # Pobranie wybranej opcji z listy rozwijanej
         selected_note = note_var.get()
         selected_position = position_var.get()
-        file_name = f"{selected_note}_{selected_position}.wav"
+        file_name = os.path.join(RECORDINGS_DIR, f"{selected_note}_{selected_position}_1.wav")
         
         # Sprawdzenie czy plik już istnieje, jeśli tak - dodaj numerowanie
-        counter = 1
+        counter = 2
         while os.path.exists(file_name):
-            file_name = f"{selected_note}_{selected_position}_{counter}.wav"
+            file_name = os.path.join(RECORDINGS_DIR, f"{selected_note}_{selected_position}_{counter}.wav")
             counter += 1
 
         # Zapis do pliku WAV
