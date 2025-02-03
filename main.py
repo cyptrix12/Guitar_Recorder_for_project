@@ -2,13 +2,12 @@ import sounddevice as sd
 import numpy as np
 import scipy.io.wavfile as wav
 import tkinter as tk
-from tkinter import messagebox
 import os
 
 # Parametry nagrywania
 SAMPLE_RATE = 48000  # Hz
 CHANNELS = 1  # Mono
-BUFOR=1024
+BUFOR = 1024
 RECORDINGS_DIR = "recordings"
 os.makedirs(RECORDINGS_DIR, exist_ok=True)
 
@@ -16,10 +15,25 @@ recording = []
 is_recording = False
 stream = None
 
-def get_input_devices():
+# Pobieranie dostępnych sterowników
+def get_available_drivers():
+    return {sd.query_hostapis(i)["name"]: i for i in range(len(sd.query_hostapis()))}
+
+DRIVERS = get_available_drivers()
+
+def get_input_devices(hostapi=None):
     devices = sd.query_devices()
-    input_devices = [d['name'] for d in devices if d['max_input_channels'] > 0]
-    return input_devices
+    input_devices = [d['name'] for d in devices if d['max_input_channels'] > 0 and (hostapi is None or d['hostapi'] == hostapi)]
+    return input_devices if input_devices else ["Brak dostępnych urządzeń"]
+
+def update_device_list(*args):
+    selected_driver = driver_var.get()
+    hostapi_index = DRIVERS.get(selected_driver, None)
+    device_menu['menu'].delete(0, 'end')
+    available_devices = get_input_devices(hostapi_index)
+    for device in available_devices:
+        device_menu['menu'].add_command(label=device, command=tk._setit(device_var, device))
+    device_var.set(available_devices[0])
 
 def count_existing_files():
     selected_model = model_var.get()
@@ -58,7 +72,7 @@ def start_recording():
         stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=CHANNELS, dtype='int32', callback=callback, device=device_index, blocksize=BUFOR)
         stream.start()
     except Exception as e:
-        messagebox.showerror("Błąd", f"Nie można rozpocząć nagrywania: {e}")
+        status_label.config(text=f"Błąd: {e}", fg="red")
         return
     
     start_button.config(state=tk.DISABLED)
@@ -76,10 +90,7 @@ def stop_recording():
         stream = None
     
     if recording:
-        # Konwersja do formatu numpy
         final_recording = np.concatenate(recording, axis=0)
-        
-        # Pobranie wybranych opcji z list rozwijanych
         selected_model = model_var.get()
         selected_note = note_var.get()
         selected_position = position_var.get()
@@ -87,18 +98,16 @@ def stop_recording():
         selected_player = player_var.get()
         file_name = os.path.join(RECORDINGS_DIR, f"{selected_model}_{selected_note}_{selected_position}_{selected_knobs}_{selected_player}_1.wav")
         
-        # Sprawdzenie czy plik już istnieje, jeśli tak - dodaj numerowanie
         counter = 2
         while os.path.exists(file_name):
             file_name = os.path.join(RECORDINGS_DIR, f"{selected_model}_{selected_note}_{selected_position}_{selected_knobs}_{selected_player}_{counter}.wav")
             counter += 1
 
-        # Zapis do pliku WAV
         wav.write(file_name, SAMPLE_RATE, final_recording.astype(np.int32))
-        messagebox.showinfo("Nagranie", f"Plik zapisano: {file_name}")
+        status_label.config(text=f"Zapisano plik: {file_name}", fg="green")
         update_file_count()
     else:
-        messagebox.showwarning("Nagranie", "Brak nagranych danych!")
+        status_label.config(text="Brak nagranych danych!", fg="red")
     
     start_button.config(state=tk.NORMAL)
     stop_button.config(state=tk.DISABLED)
@@ -106,23 +115,39 @@ def stop_recording():
 # Tworzenie GUI
 root = tk.Tk()
 root.title("Rejestrator Dźwięku")
-root.geometry("300x600")
+root.geometry("300x700")
 
-# Lista rozwijana z wyborem urządzenia
+# Suwak wyboru sterownika
+driver_label = tk.Label(root, text="Wybór sterownika:")
+driver_label.pack()
+driver_var = tk.StringVar()
+driver_var.set(next(iter(DRIVERS)))  # Domyślnie pierwszy dostępny sterownik
+driver_menu = tk.OptionMenu(root, driver_var, *DRIVERS.keys(), command=update_device_list)
+driver_menu.pack(pady=10)
+
+# Lista urządzeń
 device_label = tk.Label(root, text="Urządzenie wejściowe:")
 device_label.pack()
 device_var = tk.StringVar()
-device_var.set(get_input_devices()[0])  # Domyślnie pierwsze urządzenie
-
+device_var.set(get_input_devices()[0])
 device_menu = tk.OptionMenu(root, device_var, *get_input_devices())
 device_menu.pack(pady=10)
+update_device_list()
+
+lists = [
+    ("Model gitary", ["ArgSG", "HBTE52", "EpiSGBass", "Gretsch", "EpiSG"], "model_var"),
+    ("Nazwa akordu", ["Am", "A", "C", "Dm", "D", "Em", "E", "G"], "note_var"),
+    ("Pozycja", ["otwarta", "E", "A"], "position_var"),
+    ("Ustawienia pokręteł", ["1", "2", "3", "4"], "knobs_var"),
+    ("ID grającego", ["1", "2", "3", "4", "5"], "player_var")
+]
 
 # Lista rozwijana z wyborem modelu gitary
 model_label = tk.Label(root, text="Model gitary:")
 model_label.pack()
 model_var = tk.StringVar()
-model_var.set("1")  # Domyślna wartość
-model_options = ["1", "2", "3", "4", "5"]
+model_var.set("ArgSG")  # Domyślna wartość
+model_options = ["ArgSG", "HBTE52", "EpiSGBass", "Gretsch", "EpiSG"]
 model_menu = tk.OptionMenu(root, model_var, *model_options, command=lambda _: update_file_count())
 model_menu.pack(pady=10)
 
@@ -130,8 +155,8 @@ model_menu.pack(pady=10)
 note_label = tk.Label(root, text="Nazwa akordu:")
 note_label.pack()
 note_var = tk.StringVar()
-note_var.set("A")  # Domyślna wartość
-note_options = ["a", "A", "C", "d", "D", "e", "E", "G"]
+note_var.set("Am")  # Domyślna wartość
+note_options = ["Am", "A", "C", "Dm", "D", "Em", "E", "G"]
 note_menu = tk.OptionMenu(root, note_var, *note_options, command=lambda _: update_file_count())
 note_menu.pack(pady=10)
 
@@ -140,7 +165,7 @@ position_label = tk.Label(root, text="Pozycja:")
 position_label.pack()
 position_var = tk.StringVar()
 position_var.set("otwarta")  # Domyślna wartość
-position_options = ["otwarta", "barowe_e", "barowe_a"]
+position_options = ["otwarta", "E", "A"]
 position_menu = tk.OptionMenu(root, position_var, *position_options, command=lambda _: update_file_count())
 position_menu.pack(pady=10)
 
@@ -166,13 +191,16 @@ player_menu.pack(pady=10)
 file_count_label = tk.Label(root, text=f"Istniejące pliki: {count_existing_files()}")
 file_count_label.pack(pady=10)
 
-start_button = tk.Button(root, text="Rozpocznij nagrywanie", command=start_recording) 
+# Pozostałe elementy GUI
+start_button = tk.Button(root, text="Rozpocznij nagrywanie", command=start_recording)
 start_button.pack(pady=10)
 
 stop_button = tk.Button(root, text="Zakończ nagranie", command=stop_recording, state=tk.DISABLED)
 stop_button.pack()
 
-# Przypisanie klawisza Enter do start/stop nagrywania
-root.bind("<Return>", toggle_recording)
+# Label do wyświetlania statusu
+status_label = tk.Label(root, text="", fg="green")
+status_label.pack(pady=10)
 
+root.bind("<Return>", toggle_recording)
 root.mainloop()
