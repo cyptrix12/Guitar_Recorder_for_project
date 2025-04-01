@@ -50,7 +50,7 @@ python main.py
 After a short moment, the application window with the GUI should appear:
 
 <p align="center">
-  <img src="Screenshot.png" alt="Sound Recorder GUI" width="150">
+  <img src="Screenshot.png" alt="Sound Recorder GUI" width="250">
 </p>
 
 *Example of the application view (screenshot).*
