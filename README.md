@@ -1,6 +1,6 @@
-# Sound Recorder
+# Guitar Recorder
 
-**Sound Recorder** is a simple audio recording tool built using the [sounddevice](https://python-sounddevice.readthedocs.io/), [numpy](https://numpy.org/), [scipy](https://scipy.org/), and [tkinter](https://docs.python.org/3/library/tkinter.html) libraries. The program allows you to select an audio driver, input device, guitar model, chord name, position, knob settings, and player ID. It also supports an auto mode that automatically waits for a specified time before recording for a given duration.
+**Guitar Recorder** is a simple audio recording tool built using the [sounddevice](https://python-sounddevice.readthedocs.io/), [numpy](https://numpy.org/), [scipy](https://scipy.org/), and [tkinter](https://docs.python.org/3/library/tkinter.html) libraries. The program allows you to select an audio driver, input device, guitar model, chord name, position, knob settings, and player ID. It also supports an auto mode that automatically waits for a specified time before recording for a given duration.
 
 ## Features
 
